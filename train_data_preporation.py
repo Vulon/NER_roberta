@@ -1,28 +1,18 @@
 import warnings
 warnings.filterwarnings('ignore')
-import pandas as pd
-from transformers import RobertaTokenizer, RobertaForMaskedLM
-import re
-from torch.utils.data import Dataset, DataLoader
-import torch.nn as nn
-import torch
-import numpy as np
+from transformers import RobertaTokenizer
 import pandas as pd
 import pickle
-import tqdm
 import json
-from transformers import Trainer, TrainingArguments
-from transformers.file_utils import PaddingStrategy
-from sklearn.metrics import recall_score, precision_score, f1_score
 from collections import Counter
-
 import nltk
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-
+from dataset import NerDataset
 from config import get_config
 config = get_config()
-from dataset import NerDataset
+
+
+nltk.download('punkt', download_dir=config.SCORE.PACKAGE_FOLDER)
+nltk.download('averaged_perceptron_tagger', download_dir=config.SCORE.PACKAGE_FOLDER)
 
 
 def create_ner_tags_dict(dataframe : pd.DataFrame):
@@ -67,7 +57,7 @@ def create_pos_tags_dict(dataframe : pd.DataFrame):
 
 
 if __name__ == '__main__':
-    df = pd.read_csv(config.TRAIN.RAW_INPUT_FILEPATH).sample(frac=1, random_state=42)
+    df = pd.read_csv(config.TRAIN.RAW_INPUT_FILEPATH).sample(frac=1, random_state=config.RANDOM_SEED)
     tags_dict = create_ner_tags_dict(df)
     train_df, val_df, test_df = split_data(df)
     pos_tags_dict = create_pos_tags_dict(train_df)
