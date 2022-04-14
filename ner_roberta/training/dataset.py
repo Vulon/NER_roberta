@@ -2,10 +2,10 @@ import pandas as pd
 import torch
 import tqdm
 from transformers.file_utils import PaddingStrategy
-from transformers import RobertaTokenizer, RobertaForMaskedLM
-import json
-from config import MainConfig
+from transformers import RobertaTokenizer
+from ner_roberta.training.config import MainConfig
 import nltk
+
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 
@@ -84,12 +84,3 @@ class NerDataset:
             "upcase_fracture" : upcase_fracture, "numbers_fracture" : numbers_fracture, "pos_tags" : pos_tags
         }
 
-
-
-def load_tags_dictionaries(config):
-    with open(config.POS.POS_TAGS_DICT_FILEPATH, 'r') as file:
-        pos_tags_dict = json.load(file)
-
-    with open(config.NER.NER_TAGS_DICT_FILEPATH, 'r') as file:
-        ner_tags_dict = json.load(file)
-    return pos_tags_dict, ner_tags_dict

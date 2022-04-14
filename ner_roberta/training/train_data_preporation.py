@@ -6,8 +6,8 @@ import pickle
 import json
 from collections import Counter
 import nltk
-from dataset import NerDataset
-from config import get_config
+from ner_roberta.training.dataset import NerDataset
+from ner_roberta.training.config import get_config
 config = get_config()
 
 

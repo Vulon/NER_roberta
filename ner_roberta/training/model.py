@@ -2,9 +2,9 @@ import copy
 
 import torch.nn as nn
 from transformers import RobertaForMaskedLM, RobertaConfig
-from config import MainConfig
+from ner_roberta.training.config import MainConfig
 import torch
-from metrics import cross_entropy_with_attention
+from ner_roberta.training.metrics import cross_entropy_with_attention
 
 class NerHead(nn.Module):
     def __init__(self, out_features, in_features=768):

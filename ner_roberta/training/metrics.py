@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from sklearn.metrics import recall_score, precision_score, f1_score
-from config import MainConfig
+from ner_roberta.training.config import MainConfig
 import copy
 
 def cross_entropy_with_attention(a, b, attention_mask):

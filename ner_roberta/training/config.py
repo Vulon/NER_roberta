@@ -3,7 +3,7 @@ import copy
 
 @dataclass(frozen=True)
 class NerTagsConfig:
-    NER_TAGS_DICT_FILEPATH: str = "data/ner_tags_dict.json"
+    NER_TAGS_DICT_FILEPATH: str = "../../data/ner_tags_dict.json"
 
     NER_TAGS_SUBSTITUTION = {
         "I-nat": 'O',
@@ -23,7 +23,7 @@ class NerTagsConfig:
 
 @dataclass(frozen=True)
 class PosTagsConfig:
-    POS_TAGS_DICT_FILEPATH: str = "data/pos_tags_dict.json"
+    POS_TAGS_DICT_FILEPATH: str = "../../data/pos_tags_dict.json"
     POS_TAGS_SUBSTITUTION = {
         ',': 'punkt',
         ':': 'punkt',
@@ -41,10 +41,10 @@ class PosTagsConfig:
 class TrainConfig:
     TRAIN_SAMPLE_FRACTURE: float = 0.8
     VAL_VS_TEST_FRACTURE: float = 0.5
-    RAW_INPUT_FILEPATH: str = "ner.csv"
-    TRAIN_DATASET_PATH: str = "data/train_dataset.pkl"
-    VAL_DATASET_PATH: str = "data/val_dataset.pkl"
-    TEST_DATASET_PATH: str = "data/test_dataset.pkl"
+    RAW_INPUT_FILEPATH: str = "../../ner.csv"
+    TRAIN_DATASET_PATH: str = "../../data/train_dataset.pkl"
+    VAL_DATASET_PATH: str = "../../data/val_dataset.pkl"
+    TEST_DATASET_PATH: str = "../../data/test_dataset.pkl"
     EVAL_STEPS: int = 500
     TRAIN_BATCH_SIZE: int = 4
     VAL_BATCH_SIZE: int = 4

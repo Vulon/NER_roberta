@@ -1,17 +1,15 @@
 import warnings
 warnings.filterwarnings('ignore')
-from transformers import RobertaForMaskedLM, RobertaConfig
+from transformers import RobertaForMaskedLM
 import pickle
-from config import get_config
-from model import RobertaNER
-from metrics import cross_entropy_with_attention, create_compute_metrics_function
-import json
+from ner_roberta.training.config import get_config
+from ner_roberta.training.model import RobertaNER
+from ner_roberta.training.metrics import cross_entropy_with_attention, create_compute_metrics_function
 import torch
 import numpy as np
 import random
 from transformers import Trainer, TrainingArguments
-import torch.nn as nn
-from dataset import load_tags_dictionaries
+from ner_roberta.miscellaneous.utils import load_tags_dictionaries
 from utils import build_output_package
 
 def set_random_seed():
@@ -53,7 +51,7 @@ if __name__ == '__main__':
     compute_metrics = create_compute_metrics_function(ner_tags_dict, config)
 
     args = TrainingArguments(
-        output_dir='output',
+        output_dir='../../output',
         evaluation_strategy='steps',
         eval_steps=config.TRAIN.EVAL_STEPS,
         per_device_train_batch_size=config.TRAIN.TRAIN_BATCH_SIZE,
