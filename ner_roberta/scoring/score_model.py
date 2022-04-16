@@ -6,7 +6,6 @@ import torch
 import nltk
 
 
-
 class RobertaNerScore(nn.Module):
 
     class NerHead(nn.Module):
@@ -51,6 +50,8 @@ class RobertaNerScore(nn.Module):
         )
         outputs = self.ner_head(outputs)
         return outputs
+
+
 
 class RobertaNerScore_(nn.Module):
 
