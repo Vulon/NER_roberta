@@ -1,0 +1,16 @@
+[
+ {"tag" : "CLS", "description" : "Padding", "color" : ""},
+ {"tag" : "O", "description" : "Other", "color" : ""},
+ {"tag" : "B-per", "description" : "Person-First", "color" : "#0069b4"},
+ {"tag" : "I-per", "description" : "Person-Continued", "color" : "#0069b4"},
+ {"tag" : "B-org", "description" : "Organization-First", "color" : "#ff7b00"},
+ {"tag" : "I-org", "description" : "Organization-Continued", "color" : "#ff7b00"},
+ {"tag" : "B-gpe", "description" : "PoliticalEntity-First", "color" : "#d60039"},
+ {"tag" : "B-tim", "description" : "Time-First", "color" : "#68fa00"},
+ {"tag" : "I-tim", "description" : "Time-Continued", "color" : "#68fa00"},
+ {"tag" : "B-geo", "description" : "Location-First", "color" : "#ac00db"},
+ {"tag" : "I-geo", "description" : "Location-Continued", "color" : "#ac00db"},
+ {"tag" : "<START>", "description" : "StartOfSequence", "color" : ""},
+ {"tag" : "<STOP>", "description" : "EndOfSequence", "color" : ""},
+ {"tag" : "<UNK>", "description" : "UnknownTag", "color" : "#303030"}
+]

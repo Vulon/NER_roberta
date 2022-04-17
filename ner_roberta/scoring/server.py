@@ -8,20 +8,23 @@ import typing
 from transformers import RobertaTokenizer
 import nltk
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class ModelInput(BaseModel):
     text: str
 
 
-def load_json_configs(folder: str) -> typing.Tuple[dict, dict, dict]:
+def load_json_configs(folder: str) -> typing.Tuple[dict, dict, dict, dict]:
     with open(os.path.join(folder, "config.json"), 'r') as file:
         config = json.load(file)
     with open(os.path.join(folder, "pos_tags_dict.json"), 'r') as file:
         pos_tags_dict = json.load(file)
     with open(os.path.join(folder, "ner_tags_dict.json"), 'r') as file:
         ner_tags_dict = json.load(file)
-    return config, pos_tags_dict, ner_tags_dict
+    with open(os.path.join(folder, "ner_description.json"), 'r') as file:
+        ner_description_dict = json.load(file)
+    return config, pos_tags_dict, ner_tags_dict, ner_description_dict
 
 
 def load_model(folder: str, config: dict) -> torch.nn.Module:
@@ -76,25 +79,39 @@ def make_prediction(model, input_data, tokens_count, tokens, ner_tags_list):
     ner_indices = output.max(dim=2).indices.flatten().tolist()
     ner_indices = ner_indices[1: tokens_count + 1]
     ner_tags = [ner_tags_list[index] for index in ner_indices]
-    results = [(token, ner_tag) for token, ner_tag in zip(tokens, ner_tags)]
+    results = [{"Token" : token, "Tag" : ner_tag} for token, ner_tag in zip(tokens, ner_tags)]
     return results
 
 
 def startup_server():
     package_dir = os.environ['PACKAGE_DIR']
-    config, pos_tags_dict, ner_tags_dict = load_json_configs(package_dir)
+    config, pos_tags_dict, ner_tags_dict, ner_description_dict = load_json_configs(package_dir)
     model = load_model(package_dir, config)
     # os.environ['NLTK'] = os.path.join(package_dir, "NLTK")
     print("Tokenizer directory", os.path.join(package_dir, "tokenizer"))
     tokenizer = RobertaTokenizer.from_pretrained(os.path.join(package_dir, "tokenizer"))
     ner_tags_list = sorted(ner_tags_dict, key=lambda x: ner_tags_dict[x])
-    return model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, config
+
+
+    return model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, config, ner_description_dict
 
 
 
 # os.environ['PACKAGE_DIR'] = r"C:\PythonProjects\NER\model_package"
-model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, json_config = startup_server()
+model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, json_config, ner_description_dict = startup_server()
+print("ner_description", ner_description_dict)
 app = FastAPI()
+
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/prediction")
@@ -105,13 +122,9 @@ async def prediction(request: Request):
     result = make_prediction(model, input_data, tokens_count, tokens, ner_tags_list)
     return {"prediction": result}
 
-
-if __name__ == '__main__':
-    os.environ['PACKAGE_DIR'] = r"C:\PythonProjects\NER\model_package"
-    model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, json_config = startup_server()
-    input_data, tokens_count, tokens = prepare_text("Some text that Amir wrote to test the model", tokenizer, pos_tags_dict, json_config)
-    prediction = make_prediction(model, input_data, tokens_count, tokens, ner_tags_list)
-    print(prediction)
-
+@app.get("/ner_description")
+async def ner_description():
+    print("ner_description size", len(ner_description_dict))
+    return {"description": ner_description_dict}
 
 

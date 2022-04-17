@@ -9,8 +9,9 @@ import torch
 import numpy as np
 import random
 from transformers import Trainer, TrainingArguments
-from ner_roberta.miscellaneous.utils import load_tags_dictionaries
-from utils import build_output_package
+from ner_roberta.miscellaneous.utils import load_tags_dictionaries, build_output_package_for_fast_api
+from transformers.utils import logging
+
 
 def set_random_seed():
     np.random.seed(config.RANDOM_SEED)
@@ -18,7 +19,7 @@ def set_random_seed():
     torch.manual_seed(config.RANDOM_SEED)
 
 
-
+logger = logging.get_logger(__name__)
 config = get_config()
 
 
@@ -72,6 +73,6 @@ if __name__ == '__main__':
         compute_metrics=compute_metrics
     )
 
-    trainer.train()
+    trainer.train(config.TRAIN.START_TRAIN_CHECKPOINT)
 
-    build_output_package(model, config)
+    build_output_package_for_fast_api(model, config)

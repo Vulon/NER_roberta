@@ -48,11 +48,12 @@ class TrainConfig:
     EVAL_STEPS: int = 500
     TRAIN_BATCH_SIZE: int = 4
     VAL_BATCH_SIZE: int = 4
-    TRAIN_EPOCHS: int = 4
+    TRAIN_EPOCHS: int = 16
     SAVE_STEPS:int = 2000
     USE_FLOAT_PRECISION_16 = True
     GRADIENT_ACCUMULATION_STEPS = 4
     EVAL_ACCUMULATION_STEPS = 4
+    START_TRAIN_CHECKPOINT = r"C:/PythonProjects/NER/output/checkpoint-22000"
 
 
 @dataclass(frozen=True)
@@ -73,6 +74,7 @@ class DataConfig:
 class ScoreConfig:
     PACKAGE_FOLDER: str = "model_package"
     CONFIG_FILEPATH: str = "config.py"
+    NER_DESCRIPTION_DICTIONARY_PATH: str = "../../data/ner_description.json"
 
 @dataclass(frozen=True)
 class MainConfig:

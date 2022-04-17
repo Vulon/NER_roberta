@@ -38,30 +38,6 @@ def clear_folder_contents(folder):
             raise Exception("Could not delete all files")
 
 
-def build_output_package_for_torch_serve(trained_model: RobertaNER, config: MainConfig):
-    nltk_path = os.path.join(config.SCORE.PACKAGE_FOLDER, "NLTK")
-    if not os.path.isdir( os.path.join(config.SCORE.PACKAGE_FOLDER, "NLTK") ):
-        os.mkdir(nltk_path)
-    nltk.download('punkt', download_dir=nltk_path)
-    nltk.download('averaged_perceptron_tagger', download_dir=nltk_path)
-    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
-    shutil.copyfile(config.POS.POS_TAGS_DICT_FILEPATH, os.path.join(config.SCORE.PACKAGE_FOLDER, os.path.basename(config.POS.POS_TAGS_DICT_FILEPATH)) )
-    shutil.copyfile(config.NER.NER_TAGS_DICT_FILEPATH, os.path.join(config.SCORE.PACKAGE_FOLDER, os.path.basename(config.NER.NER_TAGS_DICT_FILEPATH)))
-
-    mini_config = {
-        "config.MODEL.POS_EMBEDDINGS_SIZE": config.MODEL.POS_EMBEDDINGS_SIZE,
-        "config.MODEL.DEFAULT_SENTENCE_LEN": config.MODEL.DEFAULT_SENTENCE_LEN,
-        "config.POS.UNK_POS_TAG" : config.POS.UNK_POS_TAG,
-        "config.POS.PAD_POS_TAG" : config.POS.PAD_POS_TAG,
-    }
-
-    tokenizer.save_pretrained(os.path.join( config.SCORE.PACKAGE_FOLDER, "tokenizer" ))
-
-    with open(os.path.join(config.SCORE.PACKAGE_FOLDER, "config.json"), 'w') as file:
-        json.dump( mini_config, file)
-    torch.save(trained_model.state_dict(), os.path.join(config.SCORE.PACKAGE_FOLDER, 'model.pt'))
-    print("CREATED PACKAGE")
-
 def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainConfig):
     project_root = get_project_root()
     package_folder = os.path.join(project_root, config.SCORE.PACKAGE_FOLDER)
@@ -92,11 +68,13 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
     print("Copying json files")
     shutil.copyfile(config.POS.POS_TAGS_DICT_FILEPATH, os.path.join(package_folder, os.path.basename(config.POS.POS_TAGS_DICT_FILEPATH)) )
     shutil.copyfile(config.NER.NER_TAGS_DICT_FILEPATH, os.path.join(package_folder, os.path.basename(config.NER.NER_TAGS_DICT_FILEPATH)))
+    shutil.copyfile(config.SCORE.NER_DESCRIPTION_DICTIONARY_PATH, os.path.join(package_folder, os.path.basename(config.SCORE.NER_DESCRIPTION_DICTIONARY_PATH)))
+
     print("Saving tokenizer")
     tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
     tokenizer.save_pretrained(os.path.join(package_folder, "tokenizer"))
     print("Saving model")
-    with open(os.path.join(config.SCORE.PACKAGE_FOLDER, "config.json"), 'w') as file:
+    with open(os.path.join(package_folder, "config.json"), 'w') as file:
         json.dump( json_config, file)
     torch.save(trained_model.state_dict(), os.path.join(package_folder, 'model.pt'))
     requirements = [
@@ -110,3 +88,11 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
     with open(os.path.join(package_folder, "requirements.txt"), 'w') as file:
         file.writelines( ["\n" + line for line in requirements] )
 
+
+if __name__ == '__main__':
+    from ner_roberta.training.config import get_config
+    config = get_config()
+    pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config)
+    model_path = os.path.join(config.TRAIN.START_TRAIN_CHECKPOINT, "pytorch_model.bin")
+    model = build_model_from_train_checkpoint(ner_tags_dict, len(pos_tags_dict), config, model_path)
+    build_output_package_for_fast_api(model, config)
