@@ -2,6 +2,7 @@ from ner_roberta.training.config import MainConfig
 import os
 import shutil
 from ner_roberta.training.model import RobertaNER, build_model_from_train_checkpoint
+
 from transformers import RobertaTokenizer
 import torch
 import json
@@ -52,6 +53,7 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
         "default_sentence_len": config.MODEL.DEFAULT_SENTENCE_LEN,
         "config.POS.UNK_POS_TAG": config.POS.UNK_POS_TAG,
         "config.POS.PAD_POS_TAG": config.POS.PAD_POS_TAG,
+        "config.SCORE.TAGS_TO_REMOVE": config.SCORE.TAGS_TO_REMOVE
     }
 
     with open(os.path.join(package_folder, "config.json"), 'w') as file:

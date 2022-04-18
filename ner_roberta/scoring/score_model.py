@@ -35,7 +35,7 @@ class RobertaNerScore(nn.Module):
             ner_tags_count: int,
             default_sentence_len: int,
             **kwargs
-        ):
+            ):
         """
         RobertaNerScore - simplified ner_roberta.training.model.RobertaNer class for scoring the model.
         It takes BPE tokens and additional character level information to predict NER tags.
@@ -69,7 +69,7 @@ class RobertaNerScore(nn.Module):
             numbers_fracture: torch.Tensor,
             pos_tags: torch.Tensor,
             *args, **kwargs
-        ) -> torch.Tensor:
+            ) -> torch.Tensor:
         outputs = self.roberta.roberta.forward(input_ids=input_ids, token_type_ids=token_type_ids,
                                                attention_mask=attention_mask)
         pos_vector = self.pos_embeddings(pos_tags)
