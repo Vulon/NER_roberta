@@ -77,7 +77,9 @@ class ScoreConfig:
     PACKAGE_FOLDER: str = "model_package"
     CONFIG_FILEPATH: str = "config.py"
     NER_DESCRIPTION_DICTIONARY_PATH: str = "../../data/ner_description.json"
-    TAGS_TO_REMOVE = ["CLS", "<START>", "<STOP>"]
+    TAGS_TO_REMOVE = ["CLS", "<START>", "<STOP>", "<UNK>"]
+    TEST_EXAMPLES_FILE_NAME: str = "test_examples.json"
+    TEST_EXAMPLE_INDICES: tuple = (52,  63, 142,  144, 177, 184, 441, 322, 308)
 
 @dataclass(frozen=True)
 class MainConfig:

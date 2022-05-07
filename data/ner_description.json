@@ -1,12 +1,8 @@
 [
- {"tag" : "CLS", "description" : "Padding", "color" : ""},
  {"tag" : "O", "description" : "Other", "color" : ""},
  {"tag" : "per", "description" : "Person", "color" : "#0069b4"},
  {"tag" : "org", "description" : "Organization", "color" : "#ff7b00"},
  {"tag" : "gpe", "description" : "Geo political entity", "color" : "#d60039"},
- {"tag" : "tim", "description" : "Time or date", "color" : "#339900"},
- {"tag" : "geo", "description" : "Physical location", "color" : "#ac00db"},
- {"tag" : "<START>", "description" : "Start of sequence", "color" : ""},
- {"tag" : "<STOP>", "description" : "End of sequence", "color" : ""},
- {"tag" : "<UNK>", "description" : "Unknown tag", "color" : "#303030"}
+ {"tag" : "tim", "description" : "Time or date", "color" : "#33CC00"},
+ {"tag" : "geo", "description" : "Physical location", "color" : "#ac00db"}
 ]

@@ -1,8 +1,11 @@
+import pickle
+import re
 from ner_roberta.training.config import MainConfig
 import os
 import shutil
 from ner_roberta.training.model import RobertaNER, build_model_from_train_checkpoint
-
+import ner_roberta.training.dataset
+import sys
 from transformers import RobertaTokenizer
 import torch
 import json
@@ -39,6 +42,25 @@ def clear_folder_contents(folder):
             raise Exception("Could not delete all files")
 
 
+def extract_test_examples(config, indices_range):
+    sys.modules['dataset'] = ner_roberta.training.dataset
+    with open(config.TRAIN.TEST_DATASET_PATH, 'rb') as file:
+        test_dataset = pickle.load(file)
+    tokenizer = RobertaTokenizer.from_pretrained(config.MODEL.TOKENIZER_NAME)
+    test_examples = []
+    indices_range = indices_range
+    for i in indices_range:
+        items = test_dataset[i]
+        input_tokens = items["input_ids"].cpu().detach().numpy()
+        text = tokenizer.decode(input_tokens)
+
+        text_match = re.search("<s>.*</s>", text)
+        text = text_match.group(0)
+        text = text.replace("<s>", "").replace("</s>", "")
+        test_examples.append( {"text" : text} )
+    return test_examples
+
+
 def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainConfig):
     project_root = get_project_root()
     package_folder = os.path.join(project_root, config.SCORE.PACKAGE_FOLDER)
@@ -55,6 +77,12 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
         "config.POS.PAD_POS_TAG": config.POS.PAD_POS_TAG,
         "config.SCORE.TAGS_TO_REMOVE": config.SCORE.TAGS_TO_REMOVE
     }
+
+    test_examples = extract_test_examples(config, config.SCORE.TEST_EXAMPLE_INDICES)
+
+    with open( os.path.join(package_folder, config.SCORE.TEST_EXAMPLES_FILE_NAME) , "w") as file:
+        json.dump(test_examples, file)
+
 
     with open(os.path.join(package_folder, "config.json"), 'w') as file:
         json.dump( json_config, file)
@@ -96,5 +124,15 @@ if __name__ == '__main__':
     config = get_config()
     pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config)
     model_path = os.path.join(config.TRAIN.START_TRAIN_CHECKPOINT, "pytorch_model.bin")
+
+
+    # test_examples = extract_test_examples(config, config.SCORE.TEST_EXAMPLE_INDICES)
+    # project_root = get_project_root()
+    # package_folder = os.path.join(project_root, config.SCORE.PACKAGE_FOLDER)
+    # with open( os.path.join(package_folder, config.SCORE.TEST_EXAMPLES_FILE_NAME) , "w") as file:
+    #     json.dump(test_examples, file)
+
     model = build_model_from_train_checkpoint(ner_tags_dict, len(pos_tags_dict), config, model_path)
     build_output_package_for_fast_api(model, config)
+
+

@@ -30,7 +30,14 @@ def load_json_configs(folder: str) -> typing.Tuple[dict, dict, dict, dict]:
         ner_tags_dict = json.load(file)
     with open(os.path.join(folder, "ner_description.json"), 'r') as file:
         ner_description_dict = json.load(file)
+
     return config, pos_tags_dict, ner_tags_dict, ner_description_dict
+
+
+def load_test_examples(folder: str) -> list:
+    with open(os.path.join(folder, "test_examples.json"), 'r') as file:
+        test_examples = json.load(file)
+    return test_examples
 
 
 def load_model(folder: str, config: dict) -> torch.nn.Module:
@@ -147,5 +154,11 @@ async def ner_description():
     logger.log(logging.INFO, "Returning NER tags description")
     return {"description": ner_description_dict}
 
+
+@app.get("/examples")
+async def examples():
+    logger.info("Returning Examples")
+    test_examples = load_test_examples(os.environ['PACKAGE_DIR'])
+    return test_examples
 
 
