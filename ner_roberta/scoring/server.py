@@ -61,8 +61,68 @@ def load_model(folder: str, config: dict) -> torch.nn.Module:
     return model_object
 
 
-def prepare_text(text: str, tokenizer, pos_tags_dict: dict, json_config: dict) -> typing.Tuple[typing.Tuple, list, list]:
-    DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
+def get_tokenizer_tensors(line: str, DEFAULT_SENTENCE_LEN: int):
+    tokenizer_output = tokenizer(line, padding=PaddingStrategy.MAX_LENGTH, truncation=True,
+                                 max_length=DEFAULT_SENTENCE_LEN, return_token_type_ids=True,
+                                 return_attention_mask=True, return_special_tokens_mask=True)
+    input_ids = tokenizer_output['input_ids']
+    token_type_ids = tokenizer_output['token_type_ids']
+    attention_mask = tokenizer_output['attention_mask']
+
+    input_ids = torch.tensor(input_ids, dtype=torch.long).unsqueeze(0)
+    token_type_ids = torch.tensor(token_type_ids, dtype=torch.long).unsqueeze(0)
+    attention_mask = torch.tensor(attention_mask, dtype=torch.long).unsqueeze(0)
+    return input_ids, token_type_ids, attention_mask
+
+
+def extract_character_level_tensors(tokens: typing.List[str], DEFAULT_SENTENCE_LEN: int):
+    upcase_fracture = []
+    numbers_fracture = []
+    for token in tokens:
+        token_upcase_count = 0
+        numbers_count = 0
+        for char in token:
+            if char.isupper():
+                token_upcase_count += 1
+            if char.isnumeric():
+                numbers_count += 1
+        token_upcase_count /= len(token)
+        numbers_count /= len(token)
+        upcase_fracture.append(token_upcase_count)
+        numbers_fracture.append(numbers_count)
+    upcase_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(upcase_fracture))
+    numbers_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(numbers_fracture))
+    upcase_fracture = torch.tensor(upcase_fracture, dtype=torch.float).unsqueeze(0)
+    numbers_fracture = torch.tensor(numbers_fracture, dtype=torch.float).unsqueeze(0)
+    return upcase_fracture, numbers_fracture
+
+
+def extract_pos_tags_tensors(tokens : typing.List[str], DEFAULT_SENTENCE_LEN: int):
+    pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["config.POS.UNK_POS_TAG"]]) for item in
+                nltk.pos_tag(tokens)]
+    pos_tags += [pos_tags_dict[json_config["config.POS.PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
+    pos_tags = torch.tensor(pos_tags, dtype=torch.long).unsqueeze(0)
+    return pos_tags
+
+
+def prepare_tensors_for_scoring(line : str, DEFAULT_SENTENCE_LEN: int):
+    tokens = nltk.tokenize.word_tokenize(line)
+    tokens_count = len(tokens)
+
+    input_ids, token_type_ids, attention_mask = get_tokenizer_tensors(line, DEFAULT_SENTENCE_LEN)
+    upcase_fracture, numbers_fracture = extract_character_level_tensors(tokens, DEFAULT_SENTENCE_LEN)
+    pos_tags = extract_pos_tags_tensors(tokens, DEFAULT_SENTENCE_LEN)
+    tensors_list = (
+        input_ids, token_type_ids, attention_mask,
+        upcase_fracture, numbers_fracture,
+        pos_tags
+    )
+
+    return tensors_list, tokens, tokens_count
+
+
+def arrange_text(text: str, json_config: dict) -> typing.List[str]:
+    # DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
     max_optimal_len = json_config['config.SCORE.MAX_OPTIMAL_SENTENCE_SIZE']
     temp_lines = nltk.sent_tokenize(text)
     lines_buffer = ""
@@ -82,76 +142,16 @@ def prepare_text(text: str, tokenizer, pos_tags_dict: dict, json_config: dict) -
         else:
             lines_buffer = candidate
     text_lines.append(lines_buffer)
-    del temp_lines, lines_buffer
-    input_ids_batch = []
-    token_type_ids_batch = []
-    attention_mask_batch = []
-    upcase_fracture_batch = []
-    numbers_fracture_batch = []
-    pos_tags_batch = []
-    tokens_list = []
-    counts_list = []
-    for line in text_lines:
-        line = " ".join(nltk.tokenize.word_tokenize(line))
-        tokens = nltk.tokenize.word_tokenize(line)
-        tokens_list.append(tokens)
-        counts_list.append(len(tokens))
-        pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["config.POS.UNK_POS_TAG"]]) for item in
-                    nltk.pos_tag(tokens)]
-        upcase_fracture = []
-        numbers_fracture = []
-        for token in tokens:
-            token_upcase_count = 0
-            numbers_count = 0
-            for char in token:
-                if char.isupper():
-                    token_upcase_count += 1
-                if char.isnumeric():
-                    numbers_count += 1
-            upcase_fracture.append(token_upcase_count / len(token))
-            numbers_fracture.append(numbers_count / len(token))
-        upcase_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(upcase_fracture))
-        numbers_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(numbers_fracture))
-        pos_tags += [pos_tags_dict[json_config["config.POS.PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
-        tokenizer_output = tokenizer(line, padding=PaddingStrategy.MAX_LENGTH, truncation=True,
-                                          max_length=DEFAULT_SENTENCE_LEN, return_token_type_ids=True,
-                                          return_attention_mask=True, return_special_tokens_mask=True)
-        input_ids = tokenizer_output['input_ids']
-        token_type_ids = tokenizer_output['token_type_ids']
-        attention_mask = tokenizer_output['attention_mask']
 
-        input_ids = torch.tensor(input_ids, dtype=torch.long).unsqueeze(0)
-        token_type_ids = torch.tensor(token_type_ids, dtype=torch.long).unsqueeze(0)
-        attention_mask = torch.tensor(attention_mask, dtype=torch.long).unsqueeze(0)
-        upcase_fracture = torch.tensor(upcase_fracture, dtype=torch.float).unsqueeze(0)
-        numbers_fracture = torch.tensor(numbers_fracture, dtype=torch.float).unsqueeze(0)
-        pos_tags = torch.tensor(pos_tags, dtype=torch.long).unsqueeze(0)
-
-        input_ids_batch.append(input_ids)
-        token_type_ids_batch.append(token_type_ids)
-        attention_mask_batch.append(attention_mask)
-        upcase_fracture_batch.append(upcase_fracture)
-        numbers_fracture_batch.append(numbers_fracture)
-        pos_tags_batch.append(pos_tags)
-
-    model_input = (
-        torch.concat(input_ids_batch, dim=0),
-        torch.concat(token_type_ids_batch, dim=0),
-        torch.concat(attention_mask_batch, dim=0),
-        torch.concat(upcase_fracture_batch, dim=0),
-        torch.concat(numbers_fracture_batch, dim=0),
-        torch.concat(pos_tags_batch, dim=0),
-    )
-    return model_input, counts_list, tokens_list
+    text_lines = [ " ".join(nltk.tokenize.word_tokenize(line)) for line in text_lines ]
+    return text_lines
 
 
-def make_prediction(model, input_data, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove):
-    logging.info(f"Scoring {len(tokens_count_list)} lines")
-    output = model(*input_data)
-    results = []
+def process_model_output(output : torch.Tensor, tokens_count_list: typing.List[int], tokens_list: typing.List[typing.List[str]] ,  tags_to_remove: typing.List[int]):
     for tag_index in tags_to_remove:
         output[:, :, tag_index] = -1000
     ner_indices = output.max(dim=2).indices
+    results = []
     for i in range(ner_indices.shape[0]):
         tokens_count = tokens_count_list[i]
         tokens = tokens_list[i]
@@ -160,6 +160,18 @@ def make_prediction(model, input_data, tokens_count_list, tokens_list, ner_tags_
         results.append(
             [{"Token" : token, "Tag" : ner_tag} for token, ner_tag in zip(tokens, line_tags)]
         )
+    return results
+
+
+def make_single_batch_prediction(lines: typing.List[str], model: torch.nn.Module, tags_to_remove: typing.List[int]):
+    DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
+    results = []
+    logging.debug(f"Predicting {len(lines)} lines")
+    for line in lines:
+        tensors_list, tokens, tokens_count = prepare_tensors_for_scoring(line, DEFAULT_SENTENCE_LEN)
+        output = model(*tensors_list)
+        result = process_model_output(output, [tokens_count], [tokens], tags_to_remove)[0]
+        results.append(result)
     return results
 
 
@@ -205,55 +217,34 @@ async def prediction(request: Request):
     start = time.time()
     body = await request.json()
     text = body['text']
-    batch_input, tokens_count_list, tokens_list = prepare_text(text, tokenizer,
-                                                    pos_tags_dict, json_config)
-    results = make_prediction(model, batch_input, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove)
+
+    text_lines = arrange_text(text, json_config)
+    results = make_single_batch_prediction(text_lines, model, tags_to_remove)
     results = [ item for nested in results for item in nested ]
     logging.info(f"NER server: prediction was made in {time.time() - start} s")
-    logging.info(f"NER server: scored { len(tokens_list) } lines")
+
     return {"prediction": results, "time": time.time() - start}
 
 
 @app.post("/batch_prediction")
 async def batch_prediction(request: Request):
     start = time.time()
-    MAX_BATCH_SIZE = json_config["config.SCORE.MAX_BATCH_SIZE"]
+    # MAX_BATCH_SIZE = json_config["config.SCORE.MAX_BATCH_SIZE"]
     body = await request.json()
     text_parts = body['batch']
-    batch_indices = []
-    input_batches = None
-    total_tokens_count = []
-    total_tokens_list = []
-    for j, part in enumerate(text_parts):
-        batch_input, tokens_count_list, tokens_list = prepare_text(part, tokenizer,
-                                                                   pos_tags_dict, json_config)
-        lines_count = len(tokens_count_list)
-        batch_indices = batch_indices + [j] * lines_count
-        if input_batches is None:
-            input_batches = [item for item in batch_input]
-        else:
-            input_batches = [ torch.concat([old_item, new_item], dim=0) for new_item, old_item in zip(batch_input, input_batches) ]
-        total_tokens_count = total_tokens_count + tokens_count_list
-        total_tokens_list = total_tokens_list + tokens_list
+    del body
+    final_results = []
+    batch_times = []
+    for raw_single_line in text_parts:
+        batch_start = time.time()
+        compressed_lines = arrange_text(raw_single_line, json_config)
+        results = make_single_batch_prediction(compressed_lines, model, tags_to_remove)
+        results = [item for nested in results for item in nested]
+        final_results.append(results)
+        batch_times.append(time.time() - batch_start)
 
-    raw_results = []
-    for j in range(0, len(batch_indices), MAX_BATCH_SIZE):
-        batch_input = input_batches[j : j + MAX_BATCH_SIZE]
-        tokens_count_list = total_tokens_count[j : j + MAX_BATCH_SIZE]
-        tokens_list = total_tokens_list[j : j + MAX_BATCH_SIZE]
-        res_list = make_prediction(model, batch_input, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove)
-        raw_results += res_list
-
-    processed_results = [ [] for _ in range( max(batch_indices) + 1 )]
-    for batch_index, res in zip(batch_indices, raw_results):
-        processed_results[ batch_index ].append( res )
-
-    for batch_index in range(len(processed_results)):
-        results_list = processed_results[batch_index]
-        processed_results[batch_index] = [ item for nested in results_list for item in nested ]
-
-    logging.info(f"NER server: prediction was made in {time.time() - start} s")
-    return {"prediction": processed_results ,"time": time.time() - start}
+    logging.info(f"NER server: prediction was made in {time.time() - start} s. Batch times: {batch_times}")
+    return {"prediction": final_results,"time": time.time() - start, "batch_times" : batch_times}
 
 
 
