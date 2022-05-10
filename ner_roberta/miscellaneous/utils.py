@@ -75,7 +75,9 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
         "default_sentence_len": config.MODEL.DEFAULT_SENTENCE_LEN,
         "config.POS.UNK_POS_TAG": config.POS.UNK_POS_TAG,
         "config.POS.PAD_POS_TAG": config.POS.PAD_POS_TAG,
-        "config.SCORE.TAGS_TO_REMOVE": config.SCORE.TAGS_TO_REMOVE
+        "config.SCORE.TAGS_TO_REMOVE": config.SCORE.TAGS_TO_REMOVE,
+        "config.SCORE.MAX_BATCH_SIZE": config.SCORE.MAX_BATCH_SIZE,
+        "config.SCORE.MAX_OPTIMAL_SENTENCE_SIZE": config.SCORE.MAX_OPTIMAL_SENTENCE_SIZE,
     }
 
     test_examples = extract_test_examples(config, config.SCORE.TEST_EXAMPLE_INDICES)
@@ -100,6 +102,8 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
     shutil.copyfile(config.NER.NER_TAGS_DICT_FILEPATH, os.path.join(package_folder, os.path.basename(config.NER.NER_TAGS_DICT_FILEPATH)))
     shutil.copyfile(config.SCORE.NER_DESCRIPTION_DICTIONARY_PATH, os.path.join(package_folder, os.path.basename(config.SCORE.NER_DESCRIPTION_DICTIONARY_PATH)))
 
+    shutil.copyfile(os.path.join(project_root, "keys/google.json"), os.path.join(package_folder, "google.json"))
+
     print("Saving tokenizer")
     tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
     tokenizer.save_pretrained(os.path.join(package_folder, "tokenizer"))
@@ -114,6 +118,7 @@ def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainCon
         "torch",
         "pydantic",
         "nltk",
+        "google-cloud-logging"
     ]
     with open(os.path.join(package_folder, "requirements.txt"), 'w') as file:
         file.writelines( ["\n" + line for line in requirements] )
@@ -124,13 +129,6 @@ if __name__ == '__main__':
     config = get_config()
     pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config)
     model_path = os.path.join(config.TRAIN.START_TRAIN_CHECKPOINT, "pytorch_model.bin")
-
-
-    # test_examples = extract_test_examples(config, config.SCORE.TEST_EXAMPLE_INDICES)
-    # project_root = get_project_root()
-    # package_folder = os.path.join(project_root, config.SCORE.PACKAGE_FOLDER)
-    # with open( os.path.join(package_folder, config.SCORE.TEST_EXAMPLES_FILE_NAME) , "w") as file:
-    #     json.dump(test_examples, file)
 
     model = build_model_from_train_checkpoint(ner_tags_dict, len(pos_tags_dict), config, model_path)
     build_output_package_for_fast_api(model, config)

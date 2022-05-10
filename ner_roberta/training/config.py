@@ -80,6 +80,8 @@ class ScoreConfig:
     TAGS_TO_REMOVE = ["CLS", "<START>", "<STOP>", "<UNK>"]
     TEST_EXAMPLES_FILE_NAME: str = "test_examples.json"
     TEST_EXAMPLE_INDICES: tuple = (52,  63, 142,  144, 177, 184, 441, 322, 308)
+    MAX_BATCH_SIZE: int = 8
+    MAX_OPTIMAL_SENTENCE_SIZE = 128
 
 @dataclass(frozen=True)
 class MainConfig:

@@ -9,10 +9,13 @@ import time
 from transformers import RobertaTokenizer
 import nltk
 from fastapi.middleware.cors import CORSMiddleware
-from transformers.utils import logging
 
 
-logger = logging.get_logger(__name__)
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.environ['PACKAGE_DIR'], "google.json")
+# import google.cloud.logging
+# gc_logger = google.cloud.logging.Client()
+# gc_logger.setup_logging()
+import logging
 
 
 def load_json_configs(folder: str) -> typing.Tuple[dict, dict, dict, dict]:
@@ -58,68 +61,126 @@ def load_model(folder: str, config: dict) -> torch.nn.Module:
     return model_object
 
 
-def prepare_text(text, tokenizer, pos_tags_dict, json_config):
+def prepare_text(text: str, tokenizer, pos_tags_dict: dict, json_config: dict) -> typing.Tuple[typing.Tuple, list, list]:
     DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
-    text = " ".join(nltk.tokenize.word_tokenize(text))
-    tokens = nltk.tokenize.word_tokenize(text)
-    pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["config.POS.UNK_POS_TAG"]]) for item in
-                nltk.pos_tag(tokens)]
-    upcase_fracture = []
-    numbers_fracture = []
-    for token in tokens:
-        token_upcase_count = 0
-        numbers_count = 0
-        for char in token:
-            if char.isupper():
-                token_upcase_count += 1
-            if char.isnumeric():
-                numbers_count += 1
-        upcase_fracture.append(token_upcase_count / len(token))
-        numbers_fracture.append(numbers_count / len(token))
-    upcase_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(upcase_fracture))
-    numbers_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(numbers_fracture))
-    pos_tags += [pos_tags_dict[json_config["config.POS.PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
-    tokenizer_output = tokenizer(text, padding=PaddingStrategy.MAX_LENGTH, truncation=True,
-                                      max_length=DEFAULT_SENTENCE_LEN, return_token_type_ids=True,
-                                      return_attention_mask=True, return_special_tokens_mask=True)
-    input_ids = tokenizer_output['input_ids']
-    token_type_ids = tokenizer_output['token_type_ids']
-    attention_mask = tokenizer_output['attention_mask']
+    max_optimal_len = json_config['config.SCORE.MAX_OPTIMAL_SENTENCE_SIZE']
+    temp_lines = nltk.sent_tokenize(text)
+    lines_buffer = ""
+    text_lines = []
+    for line in temp_lines:
+        if len(line) > max_optimal_len:
+            line = line[ : max_optimal_len]
+            text_lines.append(lines_buffer)
+            text_lines.append(line)
+            lines_buffer = ""
+            continue
 
-    input_ids = torch.tensor(input_ids, dtype=torch.long).unsqueeze(0)
-    token_type_ids = torch.tensor(token_type_ids, dtype=torch.long).unsqueeze(0)
-    attention_mask = torch.tensor(attention_mask, dtype=torch.long).unsqueeze(0)
-    upcase_fracture = torch.tensor(upcase_fracture, dtype=torch.float).unsqueeze(0)
-    numbers_fracture = torch.tensor(numbers_fracture, dtype=torch.float).unsqueeze(0)
-    pos_tags = torch.tensor(pos_tags, dtype=torch.long).unsqueeze(0)
-    tokens_count = len(tokens)
-    return (input_ids, token_type_ids, attention_mask, upcase_fracture, numbers_fracture, pos_tags), tokens_count, tokens
+        candidate = lines_buffer + " " + line
+        if len(candidate) > max_optimal_len:
+            text_lines.append(lines_buffer)
+            lines_buffer = line
+        else:
+            lines_buffer = candidate
+    text_lines.append(lines_buffer)
+    del temp_lines, lines_buffer
+    input_ids_batch = []
+    token_type_ids_batch = []
+    attention_mask_batch = []
+    upcase_fracture_batch = []
+    numbers_fracture_batch = []
+    pos_tags_batch = []
+    tokens_list = []
+    counts_list = []
+    for line in text_lines:
+        line = " ".join(nltk.tokenize.word_tokenize(line))
+        tokens = nltk.tokenize.word_tokenize(line)
+        tokens_list.append(tokens)
+        counts_list.append(len(tokens))
+        pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["config.POS.UNK_POS_TAG"]]) for item in
+                    nltk.pos_tag(tokens)]
+        upcase_fracture = []
+        numbers_fracture = []
+        for token in tokens:
+            token_upcase_count = 0
+            numbers_count = 0
+            for char in token:
+                if char.isupper():
+                    token_upcase_count += 1
+                if char.isnumeric():
+                    numbers_count += 1
+            upcase_fracture.append(token_upcase_count / len(token))
+            numbers_fracture.append(numbers_count / len(token))
+        upcase_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(upcase_fracture))
+        numbers_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(numbers_fracture))
+        pos_tags += [pos_tags_dict[json_config["config.POS.PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
+        tokenizer_output = tokenizer(line, padding=PaddingStrategy.MAX_LENGTH, truncation=True,
+                                          max_length=DEFAULT_SENTENCE_LEN, return_token_type_ids=True,
+                                          return_attention_mask=True, return_special_tokens_mask=True)
+        input_ids = tokenizer_output['input_ids']
+        token_type_ids = tokenizer_output['token_type_ids']
+        attention_mask = tokenizer_output['attention_mask']
 
-def make_prediction(model, input_data, tokens_count, tokens, ner_tags_list, tags_to_remove):
+        input_ids = torch.tensor(input_ids, dtype=torch.long).unsqueeze(0)
+        token_type_ids = torch.tensor(token_type_ids, dtype=torch.long).unsqueeze(0)
+        attention_mask = torch.tensor(attention_mask, dtype=torch.long).unsqueeze(0)
+        upcase_fracture = torch.tensor(upcase_fracture, dtype=torch.float).unsqueeze(0)
+        numbers_fracture = torch.tensor(numbers_fracture, dtype=torch.float).unsqueeze(0)
+        pos_tags = torch.tensor(pos_tags, dtype=torch.long).unsqueeze(0)
+
+        input_ids_batch.append(input_ids)
+        token_type_ids_batch.append(token_type_ids)
+        attention_mask_batch.append(attention_mask)
+        upcase_fracture_batch.append(upcase_fracture)
+        numbers_fracture_batch.append(numbers_fracture)
+        pos_tags_batch.append(pos_tags)
+
+    model_input = (
+        torch.concat(input_ids_batch, dim=0),
+        torch.concat(token_type_ids_batch, dim=0),
+        torch.concat(attention_mask_batch, dim=0),
+        torch.concat(upcase_fracture_batch, dim=0),
+        torch.concat(numbers_fracture_batch, dim=0),
+        torch.concat(pos_tags_batch, dim=0),
+    )
+    return model_input, counts_list, tokens_list
+
+
+def make_prediction(model, input_data, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove):
+    logging.info(f"Scoring {len(tokens_count_list)} lines")
     output = model(*input_data)
+    results = []
     for tag_index in tags_to_remove:
         output[:, :, tag_index] = -1000
-    ner_indices = output.max(dim=2).indices.flatten().tolist()
-    ner_indices = ner_indices[1: tokens_count + 1]
-    ner_tags = [ner_tags_list[index] for index in ner_indices]
-    results = [{"Token" : token, "Tag" : ner_tag} for token, ner_tag in zip(tokens, ner_tags)]
+    ner_indices = output.max(dim=2).indices
+    for i in range(ner_indices.shape[0]):
+        tokens_count = tokens_count_list[i]
+        tokens = tokens_list[i]
+        line_predictions = ner_indices[i, 1 : tokens_count + 1]
+        line_tags = [ner_tags_list[index] for index in line_predictions]
+        results.append(
+            [{"Token" : token, "Tag" : ner_tag} for token, ner_tag in zip(tokens, line_tags)]
+        )
     return results
 
 
 def startup_server():
-    logger.log(logging.INFO, "Starting up the server")
+    start = time.time()
+    global_start = start
+    logging.info("Starting up the NER server")
     package_dir = os.environ['PACKAGE_DIR']
     config, pos_tags_dict, ner_tags_dict, ner_description_dict = load_json_configs(package_dir)
-    logger.log(logging.INFO, "Json dictionaries loaded")
+    logging.info(f"NER server: loaded json files in {time.time() - start} s")
+    start = time.time()
     model = load_model(package_dir, config)
-    logger.log(logging.INFO, "Model loaded")
-    # os.environ['NLTK'] = os.path.join(package_dir, "NLTK")
+    logging.info(f"NER server: loaded model in {time.time() - start} s")
+    start = time.time()
     tokenizer = RobertaTokenizer.from_pretrained(os.path.join(package_dir, "tokenizer"))
-    logger.log(logging.INFO, "Loaded the RoBERTa tokenizer")
+    logging.info(f"NER server: loaded RoBERTa tokenzer in {time.time() - start} s")
+
     ner_tags_list = sorted(ner_tags_dict, key=lambda x: ner_tags_dict[x])
     tags_to_remove = config["config.SCORE.TAGS_TO_REMOVE"]
     tags_to_remove = [ner_tags_dict[tag] for tag in tags_to_remove]
-    logger.log(logging.INFO, "Finished server start up")
+    logging.info(f"NER server: server started in {time.time() - global_start} s")
 
     return model, tokenizer, pos_tags_dict, ner_tags_dict, ner_tags_list, config, ner_description_dict, tags_to_remove
 
@@ -143,21 +204,68 @@ app.add_middleware(
 async def prediction(request: Request):
     start = time.time()
     body = await request.json()
-    input_data, tokens_count, tokens = prepare_text(body['text'], tokenizer,
+    text = body['text']
+    batch_input, tokens_count_list, tokens_list = prepare_text(text, tokenizer,
                                                     pos_tags_dict, json_config)
-    result = make_prediction(model, input_data, tokens_count, tokens, ner_tags_list, tags_to_remove)
-    logger.log(logging.INFO, f"Prediction was made in {time.time() - start} seconds")
-    return {"prediction": result}
+    results = make_prediction(model, batch_input, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove)
+    results = [ item for nested in results for item in nested ]
+    logging.info(f"NER server: prediction was made in {time.time() - start} s")
+    logging.info(f"NER server: scored { len(tokens_list) } lines")
+    return {"prediction": results, "time": time.time() - start}
+
+
+@app.post("/batch_prediction")
+async def batch_prediction(request: Request):
+    start = time.time()
+    MAX_BATCH_SIZE = json_config["config.SCORE.MAX_BATCH_SIZE"]
+    body = await request.json()
+    text_parts = body['batch']
+    batch_indices = []
+    input_batches = None
+    total_tokens_count = []
+    total_tokens_list = []
+    for j, part in enumerate(text_parts):
+        batch_input, tokens_count_list, tokens_list = prepare_text(part, tokenizer,
+                                                                   pos_tags_dict, json_config)
+        lines_count = len(tokens_count_list)
+        batch_indices = batch_indices + [j] * lines_count
+        if input_batches is None:
+            input_batches = [item for item in batch_input]
+        else:
+            input_batches = [ torch.concat([old_item, new_item], dim=0) for new_item, old_item in zip(batch_input, input_batches) ]
+        total_tokens_count = total_tokens_count + tokens_count_list
+        total_tokens_list = total_tokens_list + tokens_list
+
+    raw_results = []
+    for j in range(0, len(batch_indices), MAX_BATCH_SIZE):
+        batch_input = input_batches[j : j + MAX_BATCH_SIZE]
+        tokens_count_list = total_tokens_count[j : j + MAX_BATCH_SIZE]
+        tokens_list = total_tokens_list[j : j + MAX_BATCH_SIZE]
+        res_list = make_prediction(model, batch_input, tokens_count_list, tokens_list, ner_tags_list, tags_to_remove)
+        raw_results += res_list
+
+    processed_results = [ [] for _ in range( max(batch_indices) + 1 )]
+    for batch_index, res in zip(batch_indices, raw_results):
+        processed_results[ batch_index ].append( res )
+
+    for batch_index in range(len(processed_results)):
+        results_list = processed_results[batch_index]
+        processed_results[batch_index] = [ item for nested in results_list for item in nested ]
+
+    logging.info(f"NER server: prediction was made in {time.time() - start} s")
+    return {"prediction": processed_results ,"time": time.time() - start}
+
+
 
 @app.get("/ner_description")
 async def ner_description():
-    logger.log(logging.INFO, "Returning NER tags description")
+    logging.info(f"NER server: NER tags description returned")
     return {"description": ner_description_dict}
 
 
 @app.get("/examples")
 async def examples():
-    logger.info("Returning Examples")
+    logging.info(f"NER server: examples returned")
     test_examples = load_test_examples(os.environ['PACKAGE_DIR'])
     return test_examples
 

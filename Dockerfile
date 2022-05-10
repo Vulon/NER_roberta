@@ -14,6 +14,7 @@ COPY model_package/ner_tags_dict.json /home/model-server/
 COPY model_package/pos_tags_dict.json /home/model-server/
 COPY model_package/ner_description.json /home/model-server/
 COPY model_package/test_examples.json /home/model-server/
+COPY model_package/google.json /home/model-server/
 COPY model_package/score_model.py /home/model-server/
 COPY model_package/server.py /home/model-server/
 
