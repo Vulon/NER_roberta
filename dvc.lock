@@ -43,3 +43,52 @@ stages:
     - path: .\data\val_dataset.pkl
       md5: 8e8b6a26c4fc32c351cb692c249cbfc5
       size: 43945730
+  train:
+    cmd: python ner_roberta\training\train_pipeline.py
+    deps:
+    - path: .\data\ner_tags_dict.json
+      md5: eb9d0232554db1b8ae613947b971157e
+      size: 169
+    - path: .\data\pos_tags_dict.json
+      md5: f7729f40f0d5310ca038846e240bfe7b
+      size: 331
+    - path: .\data\test_dataset.pkl
+      md5: 903b685d865da3ddab0aed963943b62a
+      size: 43940088
+    - path: .\data\train_dataset.pkl
+      md5: 34a4f48c0701beb5cd6962811005297c
+      size: 331757382
+    - path: .\data\val_dataset.pkl
+      md5: 8e8b6a26c4fc32c351cb692c249cbfc5
+      size: 43945730
+    params:
+      params.yaml:
+        MODEL:
+          DEFAULT_SENTENCE_LEN: 512
+          DEVICE: cuda
+          TOKENIZER_NAME: roberta-base
+          PRETRAINED_MODEL_NAME: roberta-base
+          POS_EMBEDDINGS_SIZE: 8
+        TRAIN:
+          EVAL_STEPS: 500
+          TRAIN_BATCH_SIZE: 4
+          VAL_BATCH_SIZE: 4
+          TRAIN_EPOCHS: 9
+          SAVE_STEPS: 2000
+          USE_FLOAT_PRECISION_16: true
+          GRADIENT_ACCUMULATION_STEPS: 4
+          EVAL_ACCUMULATION_STEPS: 4
+          START_TRAIN_CHECKPOINT: output/checkpoint-22000
+          LEARNING_RATE: 5e-06
+          WEIGHTS_DECAY: 0.01
+    outs:
+    - path: output/model
+      md5: e51e8dee3d9dc7fe9efd56fe6b1893c3.dir
+      size: 496357724
+      nfiles: 2
+    - path: output/test_metrics.json
+      md5: 4393102b1a0da30684462796587be20b
+      size: 254
+    - path: output/val_metrics.json
+      md5: d69e99c56d6294ff26c234162649a8a6
+      size: 254

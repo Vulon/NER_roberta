@@ -27,11 +27,11 @@ stages:
       - .\data\train_dataset.pkl
       - .\data\val_dataset.pkl
     outs:
-      - output/val_metrics.json
-      - output/test_metrics.json
       - output/model
     params:
       - TRAIN
       - MODEL
-
+    metrics:
+      - output/test_metrics.json
+      - output/val_metrics.json
 

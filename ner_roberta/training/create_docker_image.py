@@ -1,65 +1,34 @@
-import pickle
-import re
-import os
-import shutil
+import os, sys
+import dvc.api
+sys.path.append(os.environ["DVC_ROOT"])
 from ner_roberta.training.model import RobertaNER, build_model_from_train_checkpoint
-import ner_roberta.training.dataset
-import sys
-from transformers import RobertaTokenizer
-import torch
-import json
-import nltk
-from pathlib import Path
+from ner_roberta.miscellaneous.utils import load_tags_dictionaries, extract_test_examples
+
+def build_output_package_for_fast_api(trained_model: RobertaNER, config: dict):
+
+    project_root = os.environ["DVC_ROOT"]
+    package_folder = os.path.join(project_root, config["SCORE"]["PACKAGE_FOLDER"])
+    config["tags"]["POS"]["POS_TAGS_DICT_FILEPATH"]
+    pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config["tags"]["POS"]["POS_TAGS_DICT_FILEPATH"], config["tags"]["NER"]["NER_TAGS_DICT_FILEPATH"])
+
+    score_config = {
+        "pos_tags_count": len(pos_tags_dict),
+        "ner_tags_count": len(ner_tags_dict),
+        "POS_EMBEDDINGS_SIZE": config["MODEL"]["POS_EMBEDDINGS_SIZE"],
+        "DEFAULT_SENTENCE_LEN": config["MODEL"]["DEFAULT_SENTENCE_LEN"],
+        "UNK_POS_TAG": config["tags"]["POS"]["UNK_POS_TAG"],
+        "PAD_POS_TAG": config["tags"]["POS"]["PAD_POS_TAG"],
+        "TAGS_TO_REMOVE": config["SCORE"]["TAGS_TO_REMOVE"],
+        "MAX_BATCH_SIZE": config["SCORE"]["MAX_BATCH_SIZE"],
+        "MAX_OPTIMAL_SENTENCE_SIZE": config["SCORE"]["MAX_OPTIMAL_SENTENCE_SIZE"],
+    }
+
+    test_examples = extract_test_examples(config["DATA"]["TEST_DATASET_PATH"])
 
 
+if __name__ == "__main__":
+    params = dvc.api.params_show()
 
-def get_project_root() -> Path:
-    return Path(__file__).parent.parent.parent
-
-def load_tags_dictionaries(pos_tags_dict_filepath:str, ner_tags_dict_filepath: str):
-    with open(pos_tags_dict_filepath, 'r') as file:
-        pos_tags_dict = json.load(file)
-
-    with open(ner_tags_dict_filepath, 'r') as file:
-        ner_tags_dict = json.load(file)
-    return pos_tags_dict, ner_tags_dict
-
-def clear_folder_contents(folder):
-    stop_counter = 10
-    while len(os.listdir(folder)) > 0:
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
-        stop_counter -= 1
-        if stop_counter < 1:
-            raise Exception("Could not delete all files")
-
-
-def extract_test_examples(test_dataset_path: str, tokenizer_name: str, indices_range):
-    sys.modules['dataset'] = ner_roberta.training.dataset
-    with open(test_dataset_path, 'rb') as file:
-        test_dataset = pickle.load(file)
-    tokenizer = RobertaTokenizer.from_pretrained(tokenizer_name)
-    test_examples = []
-    indices_range = indices_range
-    for i in indices_range:
-        items = test_dataset[i]
-        input_tokens = items["input_ids"].cpu().detach().numpy()
-        text = tokenizer.decode(input_tokens)
-
-        text_match = re.search("<s>.*</s>", text)
-        text = text_match.group(0)
-        text = text.replace("<s>", "").replace("</s>", "")
-        test_examples.append( {"text" : text} )
-    return test_examples
-
-#
 # def build_output_package_for_fast_api(trained_model: RobertaNER, config: MainConfig):
 #     project_root = get_project_root()
 #     package_folder = os.path.join(project_root, config.SCORE.PACKAGE_FOLDER)
@@ -121,15 +90,3 @@ def extract_test_examples(test_dataset_path: str, tokenizer_name: str, indices_r
 #     ]
 #     with open(os.path.join(package_folder, "requirements.txt"), 'w') as file:
 #         file.writelines( ["\n" + line for line in requirements] )
-
-
-if __name__ == '__main__':
-    from ner_roberta.training.config import get_config
-    config = get_config()
-    pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config)
-    model_path = os.path.join(config.TRAIN.START_TRAIN_CHECKPOINT, "pytorch_model.bin")
-
-    model = build_model_from_train_checkpoint(ner_tags_dict, len(pos_tags_dict), config, model_path)
-    build_output_package_for_fast_api(model, config)
-
-
