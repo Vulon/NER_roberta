@@ -20,6 +20,7 @@ def create_ner_tags_dict(dataframe : pd.DataFrame, ner_tags_config: dict):
         tags_list = [word.strip() for word in tags_list.split(',')]
         tags_list = [ner_tags_config["NER_TAGS_SUBSTITUTION"].get(word, word) for word in tags_list]
         tags_dict = tags_dict.union(tags_list)
+    tags_dict = sorted(tags_dict)
     tags_dict = {word: i + 1 for i, word in enumerate(tags_dict)}
     tags_dict[ner_tags_config["START_TAG"]] = len(tags_dict) + 1
     tags_dict[ner_tags_config["STOP_TAG"]] = len(tags_dict) + 1

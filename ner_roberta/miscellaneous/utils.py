@@ -123,13 +123,4 @@ def extract_test_examples(test_dataset_path: str, tokenizer_name: str, indices_r
 #         file.writelines( ["\n" + line for line in requirements] )
 
 
-if __name__ == '__main__':
-    from ner_roberta.training.config import get_config
-    config = get_config()
-    pos_tags_dict, ner_tags_dict = load_tags_dictionaries(config)
-    model_path = os.path.join(config.TRAIN.START_TRAIN_CHECKPOINT, "pytorch_model.bin")
-
-    model = build_model_from_train_checkpoint(ner_tags_dict, len(pos_tags_dict), config, model_path)
-    build_output_package_for_fast_api(model, config)
-
 

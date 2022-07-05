@@ -3,7 +3,6 @@ import torch
 import tqdm
 from transformers.file_utils import PaddingStrategy
 from transformers import RobertaTokenizer
-from ner_roberta.training.config import MainConfig
 import nltk
 
 

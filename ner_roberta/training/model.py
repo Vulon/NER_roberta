@@ -47,13 +47,14 @@ class RobertaNER(nn.Module):
         return (outputs,)
 
 
-def build_model_from_train_checkpoint(ner_tags_count: int, pos_tags_count: int, model_config: dict, model_file_path: str):
+def build_model_from_train_checkpoint(ner_tags_count: int, pos_tags_count: int, model_config: dict, model_file_path: str = None):
     roberta_base = RobertaForMaskedLM(RobertaConfig(
         vocab_size=50265,
         max_position_embeddings=514,
         type_vocab_size=1
     ))
     ner_roberta = RobertaNER(roberta_base, ner_tags_count, pos_tags_count, model_config, cross_entropy_with_attention)
-    ner_roberta.load_state_dict(torch.load(model_file_path))
+    if model_file_path is not None:
+        ner_roberta.load_state_dict(torch.load(model_file_path))
 
     return ner_roberta
