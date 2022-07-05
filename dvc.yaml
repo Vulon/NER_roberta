@@ -1,0 +1,15 @@
+stages:
+  download_nltk:
+    cmd: python ner_roberta/training/download_files.py
+
+  prepare:
+    cmd: python ner_roberta\training\train_data_preporation.py
+    deps:
+    - .\ner.csv
+    outs:
+    - .\data\ner_tags_dict.json
+    - .\data\pos_tags_dict.json
+    - .\data\test_dataset.pkl
+    - .\data\train_dataset.pkl
+    - .\data\val_dataset.pkl
+  

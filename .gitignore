@@ -1,0 +1,6 @@
+.idea/*
+.ipynb_checkpoints/*
+data/**
+keys/*
+model_package/*
+output/*

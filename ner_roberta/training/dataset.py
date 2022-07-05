@@ -12,16 +12,17 @@ nltk.download('averaged_perceptron_tagger')
 
 
 class NerDataset:
-    def __init__(self, input_df : pd.DataFrame, tags_dict : dict, pos_tags_dict : dict, tokenizer : RobertaTokenizer, config : MainConfig):
+    def __init__(self, input_df : pd.DataFrame, tags_dict : dict, pos_tags_dict : dict, tokenizer : RobertaTokenizer, params: dict ):
 
         self.tokenizer_output = []
         self.ner_tags = []
         self.tokenizer = tokenizer
-        self.device = torch.device(config.DATA.DEVICE)
+        self.device = torch.device(params["DATA"]["DEVICE"])
         self.uppercase_fracture = []
         self.numbers_fracture = []
         self.pos_tags = []
-        DEFAULT_SENTENCE_LEN = config.MODEL.DEFAULT_SENTENCE_LEN
+
+        DEFAULT_SENTENCE_LEN = params["MODEL"]["DEFAULT_SENTENCE_LEN"]
 
         for index, row in tqdm.tqdm(input_df.iterrows(), total=input_df.shape[0]):
             sentence = row['Sentence']
@@ -30,13 +31,14 @@ class NerDataset:
             tags_list = row['Tag'].replace('[', '').replace(']', '').replace("'", "")
             tags_list = [word.strip() for word in tags_list.split(',')]
             tags_list = tags_list[ : DEFAULT_SENTENCE_LEN - 1]
-            tags_list = [config.NER.CLS_TAG] + tags_list + [config.NER.CLS_TAG] * (DEFAULT_SENTENCE_LEN - len(tags_list) - 1)
-            tags_list = [ tags_dict.get(tag, tags_dict[config.NER.UNK_TAG]) for tag in tags_list ]
+
+            tags_list = [params["tags"]["NER"]["CLS_TAG"]] + tags_list + [params["tags"]["NER"]["CLS_TAG"]] * (DEFAULT_SENTENCE_LEN - len(tags_list) - 1)
+            tags_list = [ tags_dict.get(tag, tags_dict[params["tags"]["NER"]["UNK_TAG"]]) for tag in tags_list ]
             self.ner_tags.append(tags_list)
             self.tokenizer_output.append(tokenizer_output)
 
             tokens = nltk.tokenize.word_tokenize(sentence)
-            pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[config.POS.UNK_POS_TAG])  for item in nltk.pos_tag(tokens)]
+            pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[params["tags"]["POS"]["UNK_POS_TAG"]])  for item in nltk.pos_tag(tokens)]
 
             upcase_fracture = []
             numbers_fracture = []
@@ -52,7 +54,7 @@ class NerDataset:
                 numbers_fracture.append( numbers_count / len(token) )
             upcase_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(upcase_fracture))
             numbers_fracture += [0] * (DEFAULT_SENTENCE_LEN - len(numbers_fracture))
-            pos_tags += [pos_tags_dict[config.POS.PAD_POS_TAG]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
+            pos_tags += [pos_tags_dict[params["tags"]["POS"]["PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
             self.uppercase_fracture.append(upcase_fracture)
             self.numbers_fracture.append(numbers_fracture)
             self.pos_tags.append(pos_tags)

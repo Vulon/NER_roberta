@@ -1,0 +1,61 @@
+RANDOM_SEED: 42
+
+tags:
+  NER:
+    NER_TAGS_DICT_FILEPATH: "data/ner_tags_dict.json"
+    NER_TAGS_SUBSTITUTION: {"I-nat": "O", "B-nat": 'O', "I-art": 'O', "B-art": 'O', "I-eve": 'O', "B-eve": 'O', "I-gpe": 'B-gpe'}
+    START_TAG: "<START>"
+    STOP_TAG: "<STOP>"
+    UNK_TAG: "<UNK>"
+    CLS_TAG: "CLS"
+  POS:
+    POS_TAGS_DICT_FILEPATH: "data/pos_tags_dict.json"
+    POS_TAGS_SUBSTITUTION: {
+        ',': 'punkt',
+        ':': 'punkt',
+        '$': 'punkt',
+        ')': 'punkt',
+        '(': 'punkt',
+        '#': 'punkt',
+    }
+    UNK_POS_TAG: "UNK"
+    PAD_POS_TAG: "PAD"
+    MINIMUM_POS_TAG_COUNT: 1000
+
+DATA:
+  TRAIN_SAMPLE_FRACTURE: 0.8
+  VAL_VS_TEST_FRACTURE: 0.5
+  RAW_INPUT_FILEPATH: "ner.csv"
+  TRAIN_DATASET_PATH: "data/train_dataset.pkl"
+  VAL_DATASET_PATH: "data/val_dataset.pkl"
+  TEST_DATASET_PATH: "data/test_dataset.pkl"
+  DEVICE: 'cpu'
+
+TRAIN:
+  EVAL_STEPS: 500
+  TRAIN_BATCH_SIZE: 4
+  VAL_BATCH_SIZE: 4
+  TRAIN_EPOCHS: 32
+  SAVE_STEPS: 2000
+  USE_FLOAT_PRECISION_16: True
+  GRADIENT_ACCUMULATION_STEPS: 4
+  EVAL_ACCUMULATION_STEPS: 4
+  START_TRAIN_CHECKPOINT: "output/checkpoint-22000"
+  LEARNING_RATE: 5e-6
+  WEIGHTS_DECAY: 0.01
+
+MODEL:
+  DEFAULT_SENTENCE_LEN: 512
+  DEVICE: 'cuda'
+  TOKENIZER_NAME: "roberta-base"
+  PRETRAINED_MODEL_NAME: "roberta-base"
+  POS_EMBEDDINGS_SIZE: 8
+
+SCORE:
+  PACKAGE_FOLDER: "model_package"
+  NER_DESCRIPTION_DICTIONARY_PATH: "data/ner_description.json"
+  TAGS_TO_REMOVE: ["CLS", "<START>", "<STOP>", "<UNK>"]
+  TEST_EXAMPLES_FILE_NAME: "test_examples.json"
+  TEST_EXAMPLE_INDICES: [52,  63, 142,  144, 177, 184, 441, 322, 308]
+  MAX_BATCH_SIZE: 2
+  MAX_OPTIMAL_SENTENCE_SIZE: 256

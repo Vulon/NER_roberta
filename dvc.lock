@@ -1,0 +1,4 @@
+schema: '2.0'
+stages:
+  download_nltk:
+    cmd: python ner_roberta/training/download_files.py
