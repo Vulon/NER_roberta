@@ -6,10 +6,6 @@ from transformers import RobertaTokenizer
 from ner_roberta.training.config import MainConfig
 import nltk
 
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-
-
 
 class NerDataset:
     def __init__(self, input_df : pd.DataFrame, tags_dict : dict, pos_tags_dict : dict, tokenizer : RobertaTokenizer, params: dict ):

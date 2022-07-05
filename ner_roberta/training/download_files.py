@@ -12,4 +12,4 @@ def download_nltk(nltk_folder: str):
 if __name__ == "__main__":
 
     nltk_folder = os.path.join(params["SCORE"]["PACKAGE_FOLDER"], "NLTK")
-    download_nltk(None)
+    download_nltk(nltk_folder)

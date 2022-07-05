@@ -16,6 +16,7 @@ pandas = "*"
 
 [dev-packages]
 dvc = "*"
+"dvc[gs]" = "*"
 ipykernel = "*"
 scikit-learn = "*"
 

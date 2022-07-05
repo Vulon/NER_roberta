@@ -1,5 +1,5 @@
 import copy
-
+import dvc.api
 import torch.nn as nn
 from transformers import RobertaForMaskedLM, RobertaConfig
 import torch
@@ -24,7 +24,7 @@ class RobertaNER(nn.Module):
         self.loss_function = loss_function
         self.pos_embeddings = nn.Embedding(pos_tags_count, model_config["POS_EMBEDDINGS_SIZE"])
         self.pos_embeddings_size = model_config["POS_EMBEDDINGS_SIZE"]
-        self.main_config = copy.deepcopy(model_config)
+        self.default_sentence_len = model_config["DEFAULT_SENTENCE_LEN"]
 
         self.roberta = base_roberta
         self.ner_head = NerHead(len(ner_dict), in_features=768 + model_config["POS_EMBEDDINGS_SIZE"] + 1 + 1)
@@ -37,7 +37,7 @@ class RobertaNER(nn.Module):
         # batch * 512 * 768
         pos_vector = self.pos_embeddings(pos_tags)
         outputs = torch.cat(
-            [outputs['last_hidden_state'], numbers_fracture.view(-1, self.main_config.MODEL.DEFAULT_SENTENCE_LEN, 1), upcase_fracture.view(-1, self.main_config.MODEL.DEFAULT_SENTENCE_LEN, 1),
+            [outputs['last_hidden_state'], numbers_fracture.view(-1, self.default_sentence_len, 1), upcase_fracture.view(-1, self.default_sentence_len, 1),
              pos_vector], dim=2)
         outputs = self.ner_head(outputs)
         if labels is not None:

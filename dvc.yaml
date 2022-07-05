@@ -1,15 +1,37 @@
 stages:
   download_nltk:
     cmd: python ner_roberta/training/download_files.py
+    outs:
+      - ./model_package/NLTK
 
   prepare:
     cmd: python ner_roberta\training\train_data_preporation.py
     deps:
-    - .\ner.csv
+      - .\ner.csv
+      - ./model_package/NLTK
     outs:
-    - .\data\ner_tags_dict.json
-    - .\data\pos_tags_dict.json
-    - .\data\test_dataset.pkl
-    - .\data\train_dataset.pkl
-    - .\data\val_dataset.pkl
-  
+      - .\data\ner_tags_dict.json
+      - .\data\pos_tags_dict.json
+      - .\data\test_dataset.pkl
+      - .\data\train_dataset.pkl
+      - .\data\val_dataset.pkl
+    params:
+      - DATA
+
+  train:
+    cmd: python ner_roberta\training\train_pipeline.py
+    deps:
+      - .\data\ner_tags_dict.json
+      - .\data\pos_tags_dict.json
+      - .\data\test_dataset.pkl
+      - .\data\train_dataset.pkl
+      - .\data\val_dataset.pkl
+    outs:
+      - output/val_metrics.json
+      - output/test_metrics.json
+      - output/model
+    params:
+      - TRAIN
+      - MODEL
+
+

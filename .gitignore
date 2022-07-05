@@ -1,6 +1,7 @@
 .idea/*
 .ipynb_checkpoints/*
-data/**
+data/*.pkl
+data/*_dict.json
 keys/*
 model_package/*
 output/*

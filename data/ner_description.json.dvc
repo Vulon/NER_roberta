@@ -1,0 +1,4 @@
+outs:
+- md5: 671f0cb721d7ca01e30cbbdf7986e34f
+  size: 426
+  path: ner_description.json

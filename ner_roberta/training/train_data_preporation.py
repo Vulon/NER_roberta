@@ -8,11 +8,10 @@ from collections import Counter
 import nltk
 import os, sys
 import dvc.api
-print(os.environ)
 sys.path.append(os.environ["DVC_ROOT"])
 from ner_roberta.training.dataset import NerDataset
 
-params = dvc.api.params_show()
+
 
 def create_ner_tags_dict(dataframe : pd.DataFrame, ner_tags_config: dict):
     tags_dict = set()
@@ -40,18 +39,18 @@ def split_data(dataframe : pd.DataFrame, train_fracture, val_vs_test_fracture):
     return train_df, val_df, test_df
 
 
-def create_pos_tags_dict(dataframe : pd.DataFrame, pos_tags_dict: dict):
+def create_pos_tags_dict(dataframe : pd.DataFrame, pos_tags_conf: dict):
     all_pos_tags = []
     for index, row in dataframe.iterrows():
         tokens = nltk.tokenize.word_tokenize(row['Sentence'])
-        pos_tags = [pos_tags_dict["POS_TAGS_SUBSTITUTION"].get(item[1], item[1]) for item in nltk.pos_tag(tokens)]
+        pos_tags = [pos_tags_conf["POS_TAGS_SUBSTITUTION"].get(item[1], item[1]) for item in nltk.pos_tag(tokens)]
         all_pos_tags.extend(pos_tags)
 
     all_pos_tags = Counter(all_pos_tags)
-    all_pos_tags = [item[0] for item in all_pos_tags.most_common() if item[1] > pos_tags_dict["MINIMUM_POS_TAG_COUNT"]]
+    all_pos_tags = [item[0] for item in all_pos_tags.most_common() if item[1] > pos_tags_conf["MINIMUM_POS_TAG_COUNT"]]
     pos_tags_dict = { tag : i for i, tag in enumerate(all_pos_tags) }
-    pos_tags_dict[pos_tags_dict["UNK_POS_TAG"]] = len(pos_tags_dict)
-    pos_tags_dict[pos_tags_dict["PAD_POS_TAG"]] = len(pos_tags_dict)
+    pos_tags_dict[pos_tags_conf["UNK_POS_TAG"]] = len(pos_tags_dict)
+    pos_tags_dict[pos_tags_conf["PAD_POS_TAG"]] = len(pos_tags_dict)
     return pos_tags_dict
 
 
