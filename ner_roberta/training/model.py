@@ -18,7 +18,7 @@ class NerHead(nn.Module):
 
 
 class RobertaNER(nn.Module):
-    def __init__(self, base_roberta: RobertaForMaskedLM, ner_dict: dict,
+    def __init__(self, base_roberta: RobertaForMaskedLM, ner_dict_cunt: int,
                  pos_tags_count: int, model_config: dict, loss_function):
         super(RobertaNER, self).__init__()
         self.loss_function = loss_function
@@ -27,7 +27,7 @@ class RobertaNER(nn.Module):
         self.default_sentence_len = model_config["DEFAULT_SENTENCE_LEN"]
 
         self.roberta = base_roberta
-        self.ner_head = NerHead(len(ner_dict), in_features=768 + model_config["POS_EMBEDDINGS_SIZE"] + 1 + 1)
+        self.ner_head = NerHead(ner_dict_cunt, in_features=768 + model_config["POS_EMBEDDINGS_SIZE"] + 1 + 1)
         del self.roberta.lm_head
 
     def forward(self, input_ids, token_type_ids, attention_mask, upcase_fracture, numbers_fracture, pos_tags,
@@ -47,13 +47,13 @@ class RobertaNER(nn.Module):
         return (outputs,)
 
 
-def build_model_from_train_checkpoint(ner_tags_dict: dict, pos_tags_count: int, model_config: dict, model_file_path: str):
+def build_model_from_train_checkpoint(ner_tags_count: int, pos_tags_count: int, model_config: dict, model_file_path: str):
     roberta_base = RobertaForMaskedLM(RobertaConfig(
         vocab_size=50265,
         max_position_embeddings=514,
         type_vocab_size=1
     ))
-    ner_roberta = RobertaNER(roberta_base, ner_tags_dict, pos_tags_count, model_config, cross_entropy_with_attention)
+    ner_roberta = RobertaNER(roberta_base, ner_tags_count, pos_tags_count, model_config, cross_entropy_with_attention)
     ner_roberta.load_state_dict(torch.load(model_file_path))
 
     return ner_roberta

@@ -92,3 +92,110 @@ stages:
     - path: output/val_metrics.json
       md5: d69e99c56d6294ff26c234162649a8a6
       size: 254
+  assemble_bundle:
+    cmd: python ner_roberta/training/assemble_scoring_bundle.py
+    deps:
+    - path: .\data\ner_tags_dict.json
+      md5: eb9d0232554db1b8ae613947b971157e
+      size: 169
+    - path: .\data\pos_tags_dict.json
+      md5: f7729f40f0d5310ca038846e240bfe7b
+      size: 331
+    - path: Pipfile
+      md5: 114b611a3a5bb4b37633130073ceae4a
+      size: 471
+    - path: Pipfile.lock
+      md5: 0beedb16811b57750501138a22fc1587
+      size: 135798
+    - path: data/ner_description.json
+      md5: 671f0cb721d7ca01e30cbbdf7986e34f
+      size: 426
+    - path: model_package/NLTK
+      md5: 2fd65ec9def6cebca3f72c28e38a7aed.dir
+      size: 59170146
+      nfiles: 41
+    - path: ner_roberta/scoring/score_model.py
+      md5: bf79c1e47a0121eee03441615fa2c644
+      size: 3614
+    - path: ner_roberta/scoring/server.py
+      md5: 625610525ed5e880a33b50a15e1e940d
+      size: 10763
+    - path: output/model
+      md5: e51e8dee3d9dc7fe9efd56fe6b1893c3.dir
+      size: 496357724
+      nfiles: 2
+    outs:
+    - path: model_package/Pipfile
+      md5: 114b611a3a5bb4b37633130073ceae4a
+      size: 471
+    - path: model_package/Pipfile.lock
+      md5: 0beedb16811b57750501138a22fc1587
+      size: 135798
+    - path: model_package/config.json
+      md5: 4bbeef0f565005830b020bd1186e46a9
+      size: 255
+    - path: model_package/model.pt
+      md5: 4fc125ceb82923dccacb9823f958907a
+      size: 496351661
+    - path: model_package/ner_description.json
+      md5: 671f0cb721d7ca01e30cbbdf7986e34f
+      size: 426
+    - path: model_package/ner_tags_dict.json
+      md5: eb9d0232554db1b8ae613947b971157e
+      size: 169
+    - path: model_package/pos_tags_dict.json
+      md5: f7729f40f0d5310ca038846e240bfe7b
+      size: 331
+    - path: model_package/score_model.py
+      md5: bf79c1e47a0121eee03441615fa2c644
+      size: 3614
+    - path: model_package/server.py
+      md5: 625610525ed5e880a33b50a15e1e940d
+      size: 10763
+    - path: model_package/test_examples.json
+      md5: d503b830b0516184a8c3d886949513f5
+      size: 1268
+    - path: model_package/tokenizer
+      md5: d42388ef9f4d5e18915f4a34cfca3d84.dir
+      size: 1558355
+      nfiles: 4
+  build_docker:
+    cmd: docker build --tag eu.gcr.io/nlp-masters-project/ner-roberta:v1.7 .
+    deps:
+    - path: Dockerfile
+      md5: c21733c5d7fa9e9769414fd9c55aec59
+      size: 844
+    - path: model_package/Pipfile
+      md5: 114b611a3a5bb4b37633130073ceae4a
+      size: 471
+    - path: model_package/Pipfile.lock
+      md5: 0beedb16811b57750501138a22fc1587
+      size: 135798
+    - path: model_package/config.json
+      md5: 4bbeef0f565005830b020bd1186e46a9
+      size: 255
+    - path: model_package/model.pt
+      md5: 4fc125ceb82923dccacb9823f958907a
+      size: 496351661
+    - path: model_package/ner_description.json
+      md5: 671f0cb721d7ca01e30cbbdf7986e34f
+      size: 426
+    - path: model_package/ner_tags_dict.json
+      md5: eb9d0232554db1b8ae613947b971157e
+      size: 169
+    - path: model_package/pos_tags_dict.json
+      md5: f7729f40f0d5310ca038846e240bfe7b
+      size: 331
+    - path: model_package/score_model.py
+      md5: bf79c1e47a0121eee03441615fa2c644
+      size: 3614
+    - path: model_package/server.py
+      md5: 625610525ed5e880a33b50a15e1e940d
+      size: 10763
+    - path: model_package/test_examples.json
+      md5: d503b830b0516184a8c3d886949513f5
+      size: 1268
+    - path: model_package/tokenizer
+      md5: d42388ef9f4d5e18915f4a34cfca3d84.dir
+      size: 1558355
+      nfiles: 4

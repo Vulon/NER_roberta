@@ -13,7 +13,7 @@ import torch
 import numpy as np
 import random
 from transformers import Trainer, TrainingArguments
-from ner_roberta.miscellaneous.utils import load_tags_dictionaries
+from ner_roberta.miscellaneous.utils import load_tags_dictionaries, build_model_from_train_checkpoint
 from transformers.utils import logging
 import dvc.api
 
@@ -37,14 +37,6 @@ def load_datasets(train_filepath, val_filepath, test_filepath ):
     return train_dataset, val_dataset, test_dataset
 
 
-def build_model(pos_tags_dict, ner_tags_dict, model_config: dict):
-
-    roberta_base = RobertaForMaskedLM.from_pretrained(model_config["PRETRAINED_MODEL_NAME"])
-    ner_roberta = RobertaNER(roberta_base, ner_tags_dict, len(pos_tags_dict), model_config, cross_entropy_with_attention)
-
-    return ner_roberta
-
-
 if __name__ == '__main__':
     params = dvc.api.params_show()
     set_random_seed(params["RANDOM_SEED"])
@@ -52,7 +44,8 @@ if __name__ == '__main__':
 
     pos_tags_dict, ner_tags_dict = load_tags_dictionaries(params['tags']['POS']["POS_TAGS_DICT_FILEPATH"], params['tags']['NER']["NER_TAGS_DICT_FILEPATH"])
     logger.log(logging.INFO, "Loaded NER and POS dicts")
-    model = build_model(pos_tags_dict, ner_tags_dict, params['MODEL'])
+
+    model = build_model_from_train_checkpoint(len(ner_tags_dict), len(pos_tags_dict), params['MODEL'])
     logger.log(logging.INFO, "Loaded model weights")
     train_dataset, val_dataset, test_dataset = load_datasets(params["DATA"]["TRAIN_DATASET_PATH"], params["DATA"]["VAL_DATASET_PATH"], params["DATA"]["TEST_DATASET_PATH"])
     logger.log(logging.INFO, "Loaded the datasets")

@@ -36,6 +36,7 @@ def split_data(dataframe : pd.DataFrame, train_fracture, val_vs_test_fracture):
     border = int(test_df.shape[0] * val_vs_test_fracture)
     val_df = test_df[ : border]
     test_df = test_df[border : ]
+    print("Splitted data: ", train_df.shape[0] / dataframe.shape[0], val_df.shape[0] / dataframe.shape[0], test_df.shape[0] / dataframe.shape[0])
     return train_df, val_df, test_df
 
 
@@ -61,6 +62,8 @@ if __name__ == '__main__':
 
     df = pd.read_csv(params["DATA"]["RAW_INPUT_FILEPATH"]).sample(frac=1, random_state=params["RANDOM_SEED"])
     tags_dict = create_ner_tags_dict(df, params["tags"]["NER"])
+    print("NER TAGS")
+    print(tags_dict)
 
     train_df, val_df, test_df = split_data(df, params["DATA"]["TRAIN_SAMPLE_FRACTURE"], params["DATA"]["VAL_VS_TEST_FRACTURE"])
     pos_tags_dict = create_pos_tags_dict(train_df, params["tags"]["POS"])

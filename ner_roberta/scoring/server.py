@@ -55,7 +55,12 @@ def load_model(folder: str, config: dict) -> torch.nn.Module:
     model_module = module_from_spec(spec)
     spec.loader.exec_module(model_module)
     model_module.__init__("ner_score_module")
-    model_object: torch.nn.Module = model_module.RobertaNerScore(**config)
+    model_object: torch.nn.Module = model_module.RobertaNerScore(
+        config["pos_tags_count"],
+        config["POS_EMBEDDINGS_SIZE"],
+        config["ner_tags_count"],
+        config["DEFAULT_SENTENCE_LEN"],
+    )
     state_dict = torch.load(os.path.join(folder, 'model.pt'))
     model_object.load_state_dict(state_dict)
     return model_object
@@ -97,21 +102,21 @@ def extract_character_level_tensors(tokens: typing.List[str], DEFAULT_SENTENCE_L
     return upcase_fracture, numbers_fracture
 
 
-def extract_pos_tags_tensors(tokens : typing.List[str], DEFAULT_SENTENCE_LEN: int):
-    pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["config.POS.UNK_POS_TAG"]]) for item in
+def extract_pos_tags_tensors(tokens : typing.List[str], DEFAULT_SENTENCE_LEN: int, json_config: dict):
+    pos_tags = [pos_tags_dict.get(item[1], pos_tags_dict[json_config["UNK_POS_TAG"]]) for item in
                 nltk.pos_tag(tokens)]
-    pos_tags += [pos_tags_dict[json_config["config.POS.PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
+    pos_tags += [pos_tags_dict[json_config["PAD_POS_TAG"]]] * (DEFAULT_SENTENCE_LEN - len(pos_tags))
     pos_tags = torch.tensor(pos_tags, dtype=torch.long).unsqueeze(0)
     return pos_tags
 
 
-def prepare_tensors_for_scoring(line : str, DEFAULT_SENTENCE_LEN: int):
+def prepare_tensors_for_scoring(line : str, DEFAULT_SENTENCE_LEN: int, json_config: dict):
     tokens = nltk.tokenize.word_tokenize(line)
     tokens_count = len(tokens)
 
     input_ids, token_type_ids, attention_mask = get_tokenizer_tensors(line, DEFAULT_SENTENCE_LEN)
     upcase_fracture, numbers_fracture = extract_character_level_tensors(tokens, DEFAULT_SENTENCE_LEN)
-    pos_tags = extract_pos_tags_tensors(tokens, DEFAULT_SENTENCE_LEN)
+    pos_tags = extract_pos_tags_tensors(tokens, DEFAULT_SENTENCE_LEN, json_config)
     tensors_list = (
         input_ids, token_type_ids, attention_mask,
         upcase_fracture, numbers_fracture,
@@ -122,8 +127,7 @@ def prepare_tensors_for_scoring(line : str, DEFAULT_SENTENCE_LEN: int):
 
 
 def arrange_text(text: str, json_config: dict) -> typing.List[str]:
-    # DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
-    max_optimal_len = json_config['config.SCORE.MAX_OPTIMAL_SENTENCE_SIZE']
+    max_optimal_len = json_config['MAX_OPTIMAL_SENTENCE_SIZE']
     temp_lines = nltk.sent_tokenize(text)
     lines_buffer = ""
     text_lines = []
@@ -147,7 +151,7 @@ def arrange_text(text: str, json_config: dict) -> typing.List[str]:
     return text_lines
 
 
-def process_model_output(output : torch.Tensor, tokens_count_list: typing.List[int], tokens_list: typing.List[typing.List[str]] ,  tags_to_remove: typing.List[int]):
+def process_model_output(output : torch.Tensor, tokens_count_list: typing.List[int], tokens_list: typing.List[typing.List[str]] ,  tags_to_remove: typing.List[int], ner_tags_list: list):
     for tag_index in tags_to_remove:
         output[:, :, tag_index] = -1000
     ner_indices = output.max(dim=2).indices
@@ -156,6 +160,8 @@ def process_model_output(output : torch.Tensor, tokens_count_list: typing.List[i
         tokens_count = tokens_count_list[i]
         tokens = tokens_list[i]
         line_predictions = ner_indices[i, 1 : tokens_count + 1]
+        print(tokens)
+        print(line_predictions)
         line_tags = [ner_tags_list[index] for index in line_predictions]
         results.append(
             [{"Token" : token, "Tag" : ner_tag} for token, ner_tag in zip(tokens, line_tags)]
@@ -163,14 +169,14 @@ def process_model_output(output : torch.Tensor, tokens_count_list: typing.List[i
     return results
 
 
-def make_single_batch_prediction(lines: typing.List[str], model: torch.nn.Module, tags_to_remove: typing.List[int]):
-    DEFAULT_SENTENCE_LEN = json_config['default_sentence_len']
+def make_single_batch_prediction(lines: typing.List[str], model: torch.nn.Module, tags_to_remove: typing.List[int], json_config: dict, ner_tags_list: list):
+    DEFAULT_SENTENCE_LEN = json_config['DEFAULT_SENTENCE_LEN']
     results = []
     logging.debug(f"Predicting {len(lines)} lines")
     for line in lines:
-        tensors_list, tokens, tokens_count = prepare_tensors_for_scoring(line, DEFAULT_SENTENCE_LEN)
+        tensors_list, tokens, tokens_count = prepare_tensors_for_scoring(line, DEFAULT_SENTENCE_LEN, json_config)
         output = model(*tensors_list)
-        result = process_model_output(output, [tokens_count], [tokens], tags_to_remove)[0]
+        result = process_model_output(output, [tokens_count], [tokens], tags_to_remove, ner_tags_list)[0]
         results.append(result)
     return results
 
@@ -183,6 +189,7 @@ def startup_server():
     config, pos_tags_dict, ner_tags_dict, ner_description_dict = load_json_configs(package_dir)
     logging.info(f"NER server: loaded json files in {time.time() - start} s")
     start = time.time()
+
     model = load_model(package_dir, config)
     logging.info(f"NER server: loaded model in {time.time() - start} s")
     start = time.time()
@@ -190,7 +197,9 @@ def startup_server():
     logging.info(f"NER server: loaded RoBERTa tokenzer in {time.time() - start} s")
 
     ner_tags_list = sorted(ner_tags_dict, key=lambda x: ner_tags_dict[x])
-    tags_to_remove = config["config.SCORE.TAGS_TO_REMOVE"]
+    print(ner_tags_list)
+    print(ner_tags_dict)
+    tags_to_remove = config["TAGS_TO_REMOVE"]
     tags_to_remove = [ner_tags_dict[tag] for tag in tags_to_remove]
     logging.info(f"NER server: server started in {time.time() - global_start} s")
 
@@ -219,7 +228,7 @@ async def prediction(request: Request):
     text = body['text']
 
     text_lines = arrange_text(text, json_config)
-    results = make_single_batch_prediction(text_lines, model, tags_to_remove)
+    results = make_single_batch_prediction(text_lines, model, tags_to_remove, json_config, ner_tags_list)
     results = [ item for nested in results for item in nested ]
     logging.info(f"NER server: prediction was made in {time.time() - start} s")
 
@@ -229,7 +238,6 @@ async def prediction(request: Request):
 @app.post("/batch_prediction")
 async def batch_prediction(request: Request):
     start = time.time()
-    # MAX_BATCH_SIZE = json_config["config.SCORE.MAX_BATCH_SIZE"]
     body = await request.json()
     text_parts = body['batch']
     del body
@@ -238,7 +246,7 @@ async def batch_prediction(request: Request):
     for raw_single_line in text_parts:
         batch_start = time.time()
         compressed_lines = arrange_text(raw_single_line, json_config)
-        results = make_single_batch_prediction(compressed_lines, model, tags_to_remove)
+        results = make_single_batch_prediction(compressed_lines, model, tags_to_remove, json_config, ner_tags_list)
         results = [item for nested in results for item in nested]
         final_results.append(results)
         batch_times.append(time.time() - batch_start)

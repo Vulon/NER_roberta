@@ -35,3 +35,44 @@ stages:
       - output/test_metrics.json
       - output/val_metrics.json
 
+  assemble_bundle:
+    cmd: python ner_roberta/training/assemble_scoring_bundle.py
+    deps:
+      - .\data\ner_tags_dict.json
+      - .\data\pos_tags_dict.json
+      - data/ner_description.json
+      - output/model
+      - ner_roberta/scoring/score_model.py
+      - ner_roberta/scoring/server.py
+      - Pipfile
+      - Pipfile.lock
+      - model_package/NLTK
+    outs:
+      - model_package/test_examples.json
+      - model_package/config.json
+      - model_package/score_model.py
+      - model_package/server.py
+      - model_package/ner_tags_dict.json
+      - model_package/pos_tags_dict.json
+      - model_package/ner_description.json
+      - model_package/Pipfile
+      - model_package/Pipfile.lock
+      - model_package/tokenizer
+      - model_package/model.pt
+
+  build_docker:
+    cmd: docker build --tag eu.gcr.io/nlp-masters-project/ner-roberta:v1.7 .
+    deps:
+      - Dockerfile
+      - model_package/test_examples.json
+      - model_package/config.json
+      - model_package/score_model.py
+      - model_package/server.py
+      - model_package/ner_tags_dict.json
+      - model_package/pos_tags_dict.json
+      - model_package/ner_description.json
+      - model_package/Pipfile
+      - model_package/Pipfile.lock
+      - model_package/tokenizer
+      - model_package/model.pt
+

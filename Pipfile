@@ -10,15 +10,20 @@ name = "downloadpytorch"
 
 [packages]
 transformers = "*"
-torch = {version = "==1.12.0+cu116", index = "downloadpytorch"}
+torch = "1.12.0"
 nltk = "*"
-pandas = "*"
+fastapi = "*"
+uvicorn = "*"
+pydantic = "*"
+
 
 [dev-packages]
 dvc = "*"
 "dvc[gs]" = "*"
 ipykernel = "*"
 scikit-learn = "*"
+pandas = "*"
+torch = {version = "==1.12.0+cu116", index = "downloadpytorch"}
 
 [requires]
 python_version = "3.10"
