@@ -73,25 +73,25 @@ stages:
           EVAL_STEPS: 500
           TRAIN_BATCH_SIZE: 4
           VAL_BATCH_SIZE: 4
-          TRAIN_EPOCHS: 32
+          TRAIN_EPOCHS: 16
           SAVE_STEPS: 2000
           USE_FLOAT_PRECISION_16: true
           GRADIENT_ACCUMULATION_STEPS: 4
           EVAL_ACCUMULATION_STEPS: 4
-          START_TRAIN_CHECKPOINT: ''
+          START_TRAIN_CHECKPOINT: output/checkpoint-38000
           LEARNING_RATE: 5e-06
           WEIGHTS_DECAY: 0.01
     outs:
     - path: output/model
-      md5: 700c923484a179c7b2ed6b9ae32b75a4.dir
+      md5: 747b5a0b2d95ef4fc3e4ac5fd5e7893b.dir
       size: 496357724
       nfiles: 2
     - path: output/test_metrics.json
-      md5: 6590edfb2680acbd22f020d2f1ba5969
-      size: 254
+      md5: 5eedd615fb872daa781635e01e3a1688
+      size: 252
     - path: output/val_metrics.json
-      md5: cdc4904984c8dfa0d86166e4d0e99fa3
-      size: 255
+      md5: 279ba1e06a290fd542fd4e7091cdbd95
+      size: 253
   assemble_bundle:
     cmd: python ner_roberta/training/assemble_scoring_bundle.py
     deps:
@@ -102,11 +102,11 @@ stages:
       md5: f7729f40f0d5310ca038846e240bfe7b
       size: 331
     - path: Pipfile
-      md5: 114b611a3a5bb4b37633130073ceae4a
-      size: 471
+      md5: 2f4a64aff703a40a4c7a466d4ec8f96c
+      size: 489
     - path: Pipfile.lock
-      md5: 0beedb16811b57750501138a22fc1587
-      size: 135798
+      md5: 2e98a97860711c20de3e9d1c2fcdb324
+      size: 143383
     - path: data/ner_description.json
       md5: 671f0cb721d7ca01e30cbbdf7986e34f
       size: 426
@@ -121,21 +121,21 @@ stages:
       md5: 625610525ed5e880a33b50a15e1e940d
       size: 10763
     - path: output/model
-      md5: 700c923484a179c7b2ed6b9ae32b75a4.dir
+      md5: 747b5a0b2d95ef4fc3e4ac5fd5e7893b.dir
       size: 496357724
       nfiles: 2
     outs:
     - path: model_package/Pipfile
-      md5: 114b611a3a5bb4b37633130073ceae4a
-      size: 471
+      md5: 2f4a64aff703a40a4c7a466d4ec8f96c
+      size: 489
     - path: model_package/Pipfile.lock
-      md5: 0beedb16811b57750501138a22fc1587
-      size: 135798
+      md5: 2e98a97860711c20de3e9d1c2fcdb324
+      size: 143383
     - path: model_package/config.json
       md5: 4bbeef0f565005830b020bd1186e46a9
       size: 255
     - path: model_package/model.pt
-      md5: 4fc125ceb82923dccacb9823f958907a
+      md5: e3607f7029be7b864a8119ebd575bbcb
       size: 496351661
     - path: model_package/ner_description.json
       md5: 671f0cb721d7ca01e30cbbdf7986e34f
@@ -166,16 +166,16 @@ stages:
       md5: c21733c5d7fa9e9769414fd9c55aec59
       size: 844
     - path: model_package/Pipfile
-      md5: 114b611a3a5bb4b37633130073ceae4a
-      size: 471
+      md5: 2f4a64aff703a40a4c7a466d4ec8f96c
+      size: 489
     - path: model_package/Pipfile.lock
-      md5: 0beedb16811b57750501138a22fc1587
-      size: 135798
+      md5: 2e98a97860711c20de3e9d1c2fcdb324
+      size: 143383
     - path: model_package/config.json
       md5: 4bbeef0f565005830b020bd1186e46a9
       size: 255
     - path: model_package/model.pt
-      md5: 4fc125ceb82923dccacb9823f958907a
+      md5: e3607f7029be7b864a8119ebd575bbcb
       size: 496351661
     - path: model_package/ner_description.json
       md5: 671f0cb721d7ca01e30cbbdf7986e34f

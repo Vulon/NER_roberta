@@ -24,6 +24,7 @@ ipykernel = "*"
 scikit-learn = "*"
 pandas = "*"
 torch = {version = "==1.12.0+cu116", index = "downloadpytorch"}
+tensorboard = "*"
 
 [requires]
 python_version = "3.10"

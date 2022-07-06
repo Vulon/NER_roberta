@@ -76,3 +76,6 @@ stages:
       - model_package/tokenizer
       - model_package/model.pt
 
+  push_docker:
+    cmd: docker push eu.gcr.io/nlp-masters-project/ner-roberta:v1.7
+
